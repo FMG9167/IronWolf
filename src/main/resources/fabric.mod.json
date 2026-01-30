@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "iron_wolf",
+  "version": "${version}",
+  "name": "Iron Wolf",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/iron_wolf/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "io.github.FMG9167.IronWolf.client.IronWolfDataGenerator"
+    ],
+    "client": [
+      "io.github.FMG9167.IronWolf.client.IronWolfClient"
+    ],
+    "main": [
+      "io.github.FMG9167.IronWolf.IronWolf"
+    ]
+  },
+  "mixins": [
+    "iron_wolf.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
