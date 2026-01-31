@@ -4,6 +4,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityAttachments;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.goal.*;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
@@ -11,6 +13,7 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleType;
@@ -22,6 +25,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -78,7 +82,7 @@ public class IronWolfEntity extends HostileEntity {
     private void breakArmorLayer(ServerWorld world) {
         setArmorLayer(getArmorLayer() - 1);
 
-        updateSpeedAndModel();
+        updateSpeed();
 
         this.playSound(SoundEvents.BLOCK_ANVIL_BREAK, 1.2f, 0.9f);
 
@@ -89,10 +93,8 @@ public class IronWolfEntity extends HostileEntity {
         );
     }
 
-    private void updateSpeedAndModel() {
+    private void updateSpeed() {
         Objects.requireNonNull(this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED)).setBaseValue(0.3 + (2 - getArmorLayer()) * 0.06);
-
-
     }
 
     @Override
@@ -118,5 +120,27 @@ public class IronWolfEntity extends HostileEntity {
         super.readCustomData(view);
         this.setAttacking(view.getBoolean("Attacking", false));
         this.setArmorLayer(view.getInt("ArmorLayer", 2));
+    }
+
+    public static DefaultAttributeContainer.Builder createIronWolfEntityAttributes() {
+        return MobEntity.createMobAttributes()
+                .add(EntityAttributes.MAX_HEALTH, 20)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.3f)
+                .add(EntityAttributes.ARMOR, 1)
+                .add(EntityAttributes.ARMOR_TOUGHNESS, 0)
+                .add(EntityAttributes.ATTACK_DAMAGE, 4)
+                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 1)
+                .add(EntityAttributes.ATTACK_KNOCKBACK, 2)
+                .add(EntityAttributes.FOLLOW_RANGE, 64);
+    }
+
+    @Override
+    protected void initGoals() {
+        this.goalSelector.add(0, new AttackGoal(this));
+        this.goalSelector.add(1, new WanderAroundGoal(this, 1.0D));
+        this.goalSelector.add(2, new WanderAroundFarGoal(this, 1.0D));
+        this.goalSelector.add(3, new LookAroundGoal(this));
+
+        this.targetSelector.add(0, new ActiveTargetGoal<>(this, PlayerEntity.class, true, false));
     }
 }
