@@ -1,31 +1,25 @@
 package io.github.FMG9167.IronWolf;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityAttachments;
+import net.minecraft.entity.AnimationState;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
+import net.minecraft.text.Text;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -51,6 +45,26 @@ public class IronWolfEntity extends HostileEntity {
     public Integer getArmorLayer() { return this.dataTracker.get(ARMOR_LAYER); }
     public void armorLayerBreaks() { setArmorLayer(getArmorLayer() - 1); }
 
+    public final AnimationState walkingAnimationState = new AnimationState();
+    private int walkingAnimationTimeout = 0;
+
+    private void setupAnimationStates() {
+        if(this.walkingAnimationTimeout <= 0) {
+            this.walkingAnimationTimeout = this.random.nextInt(40)+80;
+            this.walkingAnimationState.start(this.age);
+        } else {
+            --walkingAnimationTimeout;
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if(this.getWorld().isClient()) {
+            setupAnimationStates();
+        }
+    }
+
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
@@ -59,11 +73,7 @@ public class IronWolfEntity extends HostileEntity {
     }
 
     private void handleArmorHit(ServerWorld world, DamageSource source, float amount) {
-        if (source.getAttacker() instanceof PlayerEntity player && player.getMainHandStack().isIn(ItemTags.AXES)) {
-            armorDamage += amount * 1.5f;
-        } else {
-            armorDamage += amount;
-        }
+        armorDamage += amount;
 
         if (armorDamage >= 8.0f * getArmorLayer()) {
             armorDamage = 0;
@@ -94,7 +104,7 @@ public class IronWolfEntity extends HostileEntity {
     }
 
     private void updateSpeed() {
-        Objects.requireNonNull(this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED)).setBaseValue(0.3 + (2 - getArmorLayer()) * 0.06);
+        Objects.requireNonNull(this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED)).setBaseValue(0.2f + (2 - getArmorLayer()) * 0.06f);
     }
 
     @Override
@@ -103,9 +113,12 @@ public class IronWolfEntity extends HostileEntity {
 
         if (getArmorLayer() > 0) {
             handleArmorHit(world, source, amount);
+            return;
         }
         super.applyDamage(world, source, amount);
-
+        if (source.getAttacker() instanceof PlayerEntity player) {
+            player.sendMessage(Text.literal(String.valueOf(this.getHealth())), true);
+        }
     }
 
     @Override
@@ -125,19 +138,18 @@ public class IronWolfEntity extends HostileEntity {
     public static DefaultAttributeContainer.Builder createIronWolfEntityAttributes() {
         return MobEntity.createMobAttributes()
                 .add(EntityAttributes.MAX_HEALTH, 20)
-                .add(EntityAttributes.MOVEMENT_SPEED, 0.3f)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.2f)
                 .add(EntityAttributes.ARMOR, 1)
                 .add(EntityAttributes.ARMOR_TOUGHNESS, 0)
                 .add(EntityAttributes.ATTACK_DAMAGE, 4)
-                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 1)
-                .add(EntityAttributes.ATTACK_KNOCKBACK, 2)
+                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 0)
+                .add(EntityAttributes.ATTACK_KNOCKBACK, 0.1f)
                 .add(EntityAttributes.FOLLOW_RANGE, 64);
     }
 
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new AttackGoal(this));
-        this.goalSelector.add(1, new WanderAroundGoal(this, 1.0D));
         this.goalSelector.add(2, new WanderAroundFarGoal(this, 1.0D));
         this.goalSelector.add(3, new LookAroundGoal(this));
 

@@ -14,10 +14,10 @@ public class IronWolf implements ModInitializer {
 
     public static final EntityType<IronWolfEntity> IRON_WOLF = Registry.register(
             Registries.ENTITY_TYPE,
-            Identifier.of(MOD_ID, "ironwolf"),
+            Identifier.of(MOD_ID, "iron_wolf"),
             EntityType.Builder.create(IronWolfEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.9f,0.9f)
-                    .build(RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "ironwolf")))
+                    .build(RegistryKey.of(Registries.ENTITY_TYPE.getKey(), Identifier.of(MOD_ID, "iron_wolf")))
     );
 
     @Override
